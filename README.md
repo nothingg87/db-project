@@ -27,10 +27,3 @@ Owners ──< PetBase ──< Appointments ──< Medical_Records ──< Trea
                            Staff
                         Catalog_Items
 ```
-
-View：`Pets`（PetBase + 動態計算 Age）
-
-Triggers：
-- `trg_td_before_insert`：Historical_Price 強制從 Catalog_Items 覆寫
-- `trg_td_after_insert/update/delete`：自動同步 Invoices.Total_Billed
-- `trg_mr_after_update`：病歷鎖定時扣減藥品庫存（Item_Category=1）
