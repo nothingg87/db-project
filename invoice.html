@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>帳單結算 — 寵物醫院管理系統</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI','Noto Sans TC',sans-serif;background:#f4f6f9;color:#1a1a1a;display:flex;height:100vh;overflow:hidden;font-size:14px}
+#sidebar{width:220px;background:#1e2330;display:flex;flex-direction:column;flex-shrink:0}
+#sidebar .logo{padding:20px 18px 16px;border-bottom:1px solid #2d3347}
+#sidebar .logo-title{font-size:14px;font-weight:600;color:#fff;line-height:1.4}
+#sidebar .logo-sub{font-size:11px;color:#6b7280;margin-top:2px}
+#sidebar nav{flex:1;padding:12px 0}
+#sidebar nav a{display:flex;align-items:center;gap:10px;padding:10px 18px;color:#9ca3af;font-size:13px;cursor:pointer;border-left:3px solid transparent;text-decoration:none;transition:all .15s}
+#sidebar nav a:hover{color:#e5e7eb;background:#252b3b}
+#sidebar nav a.active{color:#fff;background:#252b3b;border-left-color:#3b82f6}
+#sidebar nav a .icon{font-size:16px;width:20px;text-align:center}
+#sidebar .user-info{padding:14px 18px;border-top:1px solid #2d3347}
+#sidebar .user-role{font-size:11px;color:#6b7280}
+#sidebar .user-name{font-size:13px;color:#d1d5db;margin-top:2px}
+#main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+#topbar{background:#fff;border-bottom:1px solid #e5e7eb;padding:0 24px;height:52px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+#topbar .page-title{font-size:15px;font-weight:500}
+#content{flex:1;overflow-y:auto;padding:24px}
+.card{background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:16px 18px;margin-bottom:14px}
+.card-title{font-size:12px;color:#6b7280;margin-bottom:12px;font-weight:600;letter-spacing:.3px;text-transform:uppercase}
+.field{display:flex;flex-direction:column;gap:4px}
+.field label{font-size:12px;color:#6b7280}
+input[type=text]{border:1px solid #d1d5db;border-radius:6px;padding:7px 10px;font-size:13px;color:#1a1a1a;background:#fafafa;width:100%;font-family:inherit;outline:none;transition:border-color .15s}
+input[type=text]:focus{border-color:#3b82f6;background:#fff}
+.btn-row{display:flex;justify-content:flex-end;gap:8px;margin-top:4px}
+button{border:1px solid #d1d5db;background:#fff;border-radius:6px;padding:7px 16px;font-size:13px;cursor:pointer;font-family:inherit;transition:all .15s}
+button:hover{background:#f9fafb}
+button:active{transform:scale(.98)}
+.btn-success{background:#22c55e;color:#fff;border-color:#16a34a}
+.btn-success:hover{background:#16a34a}
+.badge{font-size:11px;padding:2px 8px;border-radius:5px;font-weight:500}
+.badge-amber{background:#fef9c3;color:#854d0e}
+.badge-green{background:#dcfce7;color:#166534}
+.rec-item{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid #f3f4f6;cursor:pointer;transition:all .1s}
+.rec-item:last-child{border-bottom:none}
+.rec-item:hover{background:#f9fafb;margin:0 -18px;padding:10px 18px;border-radius:6px}
+.rec-meta{font-size:12px;color:#6b7280;margin-top:2px}
+.inv-row{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid #f3f4f6;font-size:13px}
+.inv-row:last-child{border-bottom:none}
+.inv-total{display:flex;justify-content:space-between;padding:10px 0 0;font-size:15px;font-weight:600}
+.pay-options{display:flex;gap:20px;margin-bottom:12px}
+.pay-options label{display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer}
+hr{border:none;border-top:1px solid #e5e7eb;margin:10px 0}
+#toast{position:fixed;bottom:24px;right:24px;background:#1e2330;color:#fff;padding:12px 18px;border-radius:8px;font-size:13px;transform:translateY(80px);opacity:0;transition:all .3s;z-index:999;max-width:280px}
+#toast.show{transform:translateY(0);opacity:1}
+#toast.success{background:#166534}
+#toast.error{background:#991b1b}
+@media print{
+  #sidebar,#topbar,.btn-row,.rec-item{display:none}
+  #main{overflow:visible}
+  #content{padding:0}
+}
+</style>
+</head>
+<body data-roles="1,4">
+<aside id="sidebar">
+  <div class="logo">
+    <div class="logo-title">🐾 現代寵物醫院</div>
+    <div class="logo-sub">醫療與營運管理系統</div>
+  </div>
+  <nav></nav>
+  <div class="user-info" id="user-info"></div>
+</aside>
+
+<div id="main">
+  <div id="topbar">
+    <div class="page-title">帳單結算</div>
+    <div style="font-size:12px;color:#6b7280" id="topbar-date"></div>
+  </div>
+  <div id="content">
+
+    <!-- 待結帳清單 -->
+    <div class="card" id="invoice-list-card">
+      <div class="card-title">待結帳帳單</div>
+      <div id="invoice-list"><span style="font-size:12px;color:#9ca3af">載入中…</span></div>
+    </div>
+
+    <!-- 帳單詳情 -->
+    <div id="invoice-detail" style="display:none">
+
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+          <div>
+            <div id="inv-title" style="font-size:15px;font-weight:500"></div>
+            <div id="inv-meta"  style="font-size:12px;color:#6b7280;margin-top:2px"></div>
+          </div>
+          <span class="badge badge-amber">待結帳</span>
+        </div>
+        <div class="card-title">費用明細</div>
+        <div id="inv-items"></div>
+        <hr>
+        <div class="inv-total">
+          <span>總計</span>
+          <span id="inv-total-amt"></span>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">付款方式</div>
+        <div class="pay-options">
+          <label><input type="radio" name="pay" value="cash"      checked> 現金</label>
+          <label><input type="radio" name="pay" value="card"            > 信用卡</label>
+          <label><input type="radio" name="pay" value="insurance"       > 保險</label>
+        </div>
+        <div class="field">
+          <label>備註</label>
+          <input type="text" id="inv-note" placeholder="選填…">
+        </div>
+      </div>
+
+      <div class="btn-row">
+        <button onclick="backToList()">← 返回</button>
+        <button onclick="window.print()">列印帳單</button>
+        <button class="btn-success" onclick="confirmPayment()">✓ 確認收款</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+<div id="toast"></div>
+
+<script src="common.js"></script>
+<script>
+let currentInvoice = null;
+
+document.getElementById('topbar-date').textContent = todayStr();
+loadInvoices();
+
+async function loadInvoices() {
+  // GET /invoices/pending → Payment_Status=0 且 Record_Locked=TRUE
+  const invs = await api('GET', '/invoices/pending');
+  const el   = document.getElementById('invoice-list');
+  document.getElementById('invoice-detail').style.display    = 'none';
+  document.getElementById('invoice-list-card').style.display = '';
+
+  if (!invs.length) {
+    el.innerHTML = '<div style="font-size:12px;color:#9ca3af;padding:8px 0">目前沒有待結帳帳單</div>';
+    return;
+  }
+  el.innerHTML = invs.map(i => `
+    <div class="rec-item" onclick="openInvoice(${i.Invoice_ID})">
+      <div>
+        <div style="font-size:13px;font-weight:500">
+          Invoice #${i.Invoice_ID}　${i.pet?.Pet_Name}（飼主：${i.owner?.Full_Name}）
+        </div>
+        <div class="rec-meta">
+          ${i.record?.Consultation_Date || ''}
+          應付金額：$${(i.Total_Billed || 0).toLocaleString()}
+        </div>
+      </div>
+      <span class="badge badge-amber">待結帳</span>
+    </div>`).join('');
+}
+
+async function openInvoice(iid) {
+  const invs = await api('GET', '/invoices/pending');
+  const inv  = invs.find(i => i.Invoice_ID === iid);
+  if (!inv) return;
+  currentInvoice = inv;
+
+  document.getElementById('inv-title').textContent = `Invoice #${inv.Invoice_ID}`;
+  document.getElementById('inv-meta').textContent  =
+    `${inv.record?.Consultation_Date}　${inv.pet?.Pet_Name}（飼主：${inv.owner?.Full_Name}）`;
+
+  const details = inv.record?.details || [];
+  document.getElementById('inv-items').innerHTML = details.length
+    ? details.map(d => {
+        const item = MOCK.catalog.find(c => c.Item_ID === d.Item_ID);
+        return `<div class="inv-row">
+          <span>${item?.Item_Name || 'Item #' + d.Item_ID} × ${d.Numeric_Value}</span>
+          <span>$${(d.Historical_Price * d.Numeric_Value).toLocaleString()}</span>
+        </div>`;
+      }).join('')
+    : '<div style="font-size:12px;color:#9ca3af">無明細</div>';
+
+  document.getElementById('inv-total-amt').textContent = '$' + (inv.Total_Billed || 0).toLocaleString();
+  document.getElementById('inv-note').value = '';
+  document.querySelector('input[name="pay"][value="cash"]').checked = true;
+
+  document.getElementById('invoice-list-card').style.display = 'none';
+  document.getElementById('invoice-detail').style.display    = '';
+}
+
+function backToList() {
+  currentInvoice = null;
+  loadInvoices();
+}
+
+async function confirmPayment() {
+  if (!currentInvoice) return;
+  const pay  = document.querySelector('input[name="pay"]:checked')?.value || 'cash';
+  const note = document.getElementById('inv-note').value;
+
+  // PATCH /invoices/:iid/pay → Payment_Status=1, Payment_Method
+  await api('PATCH', `/invoices/${currentInvoice.Invoice_ID}/pay`, {
+    Payment_Method: pay,
+    note,
+  });
+  toast('✓ 收款完成', 'success');
+  currentInvoice = null;
+  setTimeout(() => loadInvoices(), 600);
+}
+</script>
+</body>
+</html>

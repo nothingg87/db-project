@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>登入 — 寵物醫院管理系統</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI','Noto Sans TC',sans-serif;background:#f4f6f9;color:#1a1a1a;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:14px}
+.login-wrap{width:100%;max-width:420px;padding:24px 16px}
+.logo-block{text-align:center;margin-bottom:32px}
+.logo-icon{font-size:40px;margin-bottom:8px}
+.logo-title{font-size:20px;font-weight:700;color:#1e2330}
+.logo-sub{font-size:12px;color:#6b7280;margin-top:4px}
+.card{background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:24px}
+.card-title{font-size:12px;color:#6b7280;font-weight:600;letter-spacing:.3px;text-transform:uppercase;margin-bottom:16px}
+.staff-list{display:flex;flex-direction:column;gap:8px}
+.staff-card{display:flex;align-items:center;gap:12px;padding:12px 14px;border:1px solid #e5e7eb;border-radius:8px;cursor:pointer;transition:all .15s;background:#fafafa}
+.staff-card:hover{border-color:#3b82f6;background:#eff6ff}
+.staff-card:active{transform:scale(.98)}
+.staff-avatar{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:600;flex-shrink:0}
+.av-1{background:#dbeafe;color:#1e40af}
+.av-2{background:#f3e8ff;color:#6b21a8}
+.av-3{background:#dcfce7;color:#166534}
+.av-4{background:#fef9c3;color:#854d0e}
+.staff-info{flex:1}
+.staff-name{font-size:13px;font-weight:500}
+.staff-role{font-size:11px;color:#6b7280;margin-top:2px}
+.staff-specialty{font-size:11px;color:#9ca3af}
+.arrow{color:#d1d5db;font-size:16px}
+.divider{border:none;border-top:1px solid #f3f4f6;margin:16px 0}
+.hint{font-size:11px;color:#9ca3af;text-align:center;margin-top:16px}
+</style>
+</head>
+<body>
+<div class="login-wrap">
+  <div class="logo-block">
+    <div class="logo-icon">🐾</div>
+    <div class="logo-title">現代寵物醫院</div>
+    <div class="logo-sub">醫療與營運管理系統</div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">選擇帳號登入</div>
+    <div class="staff-list" id="staff-list">
+      <div style="font-size:12px;color:#9ca3af;padding:8px 0">載入中…</div>
+    </div>
+    <hr class="divider">
+    <div class="hint">Demo 模式：點選帳號直接登入，無需密碼</div>
+  </div>
+</div>
+
+<script src="common.js"></script>
+<script>
+// 若已登入就直接跳轉
+const u = getCurrentUser();
+if (u) { location.href = 'appointment.html'; }
+
+const ROLE_ICON = { 1: '🖥️', 2: '💉', 3: '🩺', 4: '📊' };
+const AV_CHAR   = { 1: '行', 2: '護', 3: '醫', 4: '理' };
+
+document.getElementById('staff-list').innerHTML = MOCK.staff.map(s => `
+  <div class="staff-card" onclick="login(${s.Staff_ID})">
+    <div class="staff-avatar av-${s.Role_Level}">${AV_CHAR[s.Role_Level] || s.Staff_Name[0]}</div>
+    <div class="staff-info">
+      <div class="staff-name">${s.Staff_Name}</div>
+      <div class="staff-role">${ROLE_NAME[s.Role_Level] || '未知'} · Role ${s.Role_Level}</div>
+      ${s.Specialty ? `<div class="staff-specialty">${s.Specialty}</div>` : ''}
+    </div>
+    <div class="arrow">›</div>
+  </div>
+`).join('');
+</script>
+</body>
+</html>

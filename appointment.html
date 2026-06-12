@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>掛號預約 — 寵物醫院管理系統</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI','Noto Sans TC',sans-serif;background:#f4f6f9;color:#1a1a1a;display:flex;height:100vh;overflow:hidden;font-size:14px}
+#sidebar{width:220px;background:#1e2330;display:flex;flex-direction:column;flex-shrink:0}
+#sidebar .logo{padding:20px 18px 16px;border-bottom:1px solid #2d3347}
+#sidebar .logo-title{font-size:14px;font-weight:600;color:#fff;line-height:1.4}
+#sidebar .logo-sub{font-size:11px;color:#6b7280;margin-top:2px}
+#sidebar nav{flex:1;padding:12px 0}
+#sidebar nav a{display:flex;align-items:center;gap:10px;padding:10px 18px;color:#9ca3af;font-size:13px;cursor:pointer;border-left:3px solid transparent;text-decoration:none;transition:all .15s}
+#sidebar nav a:hover{color:#e5e7eb;background:#252b3b}
+#sidebar nav a.active{color:#fff;background:#252b3b;border-left-color:#3b82f6}
+#sidebar nav a .icon{font-size:16px;width:20px;text-align:center}
+#sidebar .user-info{padding:14px 18px;border-top:1px solid #2d3347}
+#sidebar .user-role{font-size:11px;color:#6b7280}
+#sidebar .user-name{font-size:13px;color:#d1d5db;margin-top:2px}
+#main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+#topbar{background:#fff;border-bottom:1px solid #e5e7eb;padding:0 24px;height:52px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+#topbar .page-title{font-size:15px;font-weight:500}
+#content{flex:1;overflow-y:auto;padding:24px}
+.card{background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:16px 18px;margin-bottom:14px}
+.card-title{font-size:12px;color:#6b7280;margin-bottom:12px;font-weight:600;letter-spacing:.3px;text-transform:uppercase}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+.field{display:flex;flex-direction:column;gap:4px}
+.field label{font-size:12px;color:#6b7280}
+input[type=text],input[type=date],select{border:1px solid #d1d5db;border-radius:6px;padding:7px 10px;font-size:13px;color:#1a1a1a;background:#fafafa;width:100%;font-family:inherit;outline:none;transition:border-color .15s}
+input:focus,select:focus{border-color:#3b82f6;background:#fff}
+input:disabled{background:#f0f0f0;color:#9ca3af;cursor:not-allowed}
+.btn-row{display:flex;justify-content:flex-end;gap:8px;margin-top:4px}
+button{border:1px solid #d1d5db;background:#fff;border-radius:6px;padding:7px 16px;font-size:13px;cursor:pointer;font-family:inherit;transition:all .15s}
+button:hover{background:#f9fafb}
+button:active{transform:scale(.98)}
+.btn-primary{background:#3b82f6;color:#fff;border-color:#2563eb}
+.btn-primary:hover{background:#2563eb}
+.btn-sm{padding:5px 12px;font-size:12px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;padding:8px 10px;border-bottom:2px solid #e5e7eb;font-size:11px;color:#6b7280;font-weight:600;text-transform:uppercase;letter-spacing:.3px}
+td{padding:10px;border-bottom:1px solid #f3f4f6}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:#f9fafb}
+.slot-grid{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.slot{font-size:12px;padding:4px 10px;border-radius:6px;border:1px solid;cursor:pointer;transition:all .15s}
+.slot.free{background:#f0fdf4;border-color:#86efac;color:#166534}
+.slot.free:hover{background:#dcfce7}
+.slot.busy{background:#f9fafb;border-color:#e5e7eb;color:#9ca3af;cursor:not-allowed}
+.slot.selected{background:#3b82f6;border-color:#2563eb;color:#fff}
+.pet-chip{display:inline-flex;align-items:center;gap:6px;background:#f3f4f6;border-radius:8px;padding:6px 12px;font-size:13px}
+.search-row{display:flex;gap:8px;margin-bottom:14px}
+.search-row input{flex:1}
+#toast{position:fixed;bottom:24px;right:24px;background:#1e2330;color:#fff;padding:12px 18px;border-radius:8px;font-size:13px;transform:translateY(80px);opacity:0;transition:all .3s;z-index:999;max-width:280px}
+#toast.show{transform:translateY(0);opacity:1}
+#toast.success{background:#166534}
+#toast.error{background:#991b1b}
+</style>
+</head>
+<body data-roles="1,4">
+<aside id="sidebar">
+  <div class="logo">
+    <div class="logo-title">🐾 現代寵物醫院</div>
+    <div class="logo-sub">醫療與營運管理系統</div>
+  </div>
+  <nav></nav>
+  <div class="user-info" id="user-info"></div>
+</aside>
+
+<div id="main">
+  <div id="topbar">
+    <div class="page-title">掛號預約</div>
+    <div style="font-size:12px;color:#6b7280" id="topbar-date"></div>
+  </div>
+  <div id="content">
+
+    <!-- 搜尋飼主 -->
+    <div class="card">
+      <div class="card-title">飼主搜尋</div>
+      <div class="search-row">
+        <input type="text" id="owner-search" placeholder="輸入飼主姓名或電話…" oninput="searchOwner(this.value)">
+        <button onclick="searchOwner(document.getElementById('owner-search').value)">搜尋</button>
+      </div>
+      <div id="owner-results"></div>
+    </div>
+
+    <!-- 選擇寵物（選完飼主才出現） -->
+    <div class="card" id="pet-card" style="display:none">
+      <div class="card-title">選擇寵物</div>
+      <div class="form-grid">
+        <div class="field">
+          <label>寵物</label>
+          <select id="pet-select" onchange="selectPet(this.value)">
+            <option value="">— 選擇 —</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>物種（自動帶入）</label>
+          <input id="pet-species" disabled>
+        </div>
+      </div>
+      <div id="pet-detail" style="display:none" class="pet-chip"></div>
+    </div>
+
+    <!-- 預約時段（選完寵物才出現） -->
+    <div class="card" id="schedule-card" style="display:none">
+      <div class="card-title">預約時段</div>
+      <div class="form-grid">
+        <div class="field">
+          <label>日期</label>
+          <input type="date" id="appt-date" onchange="loadSchedule()">
+        </div>
+        <div class="field">
+          <label>主治醫師</label>
+          <select id="doctor-select" onchange="loadSchedule()">
+            <option value="">— 選擇醫師 —</option>
+          </select>
+        </div>
+      </div>
+      <div class="field">
+        <label>可預約時段（即時查詢）</label>
+        <div class="slot-grid" id="slot-grid">
+          <span style="font-size:12px;color:#9ca3af">請先選擇日期與醫師</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="btn-row">
+      <button onclick="resetAll()">清除</button>
+      <button class="btn-primary" onclick="submitAppointment()">✓ 確認預約</button>
+    </div>
+
+  </div>
+</div>
+<div id="toast"></div>
+
+<script src="common.js"></script>
+<script>
+let state = { owner: null, pet: null, Doc_Staff_ID: null, selectedTime: null };
+
+document.getElementById('topbar-date').textContent = todayStr();
+
+async function searchOwner(q) {
+  const el = document.getElementById('owner-results');
+  if (!q || !q.trim()) { el.innerHTML = ''; return; }
+  const owners = await api('GET', `/owners/search?q=${encodeURIComponent(q)}`);
+  if (!owners.length) {
+    el.innerHTML = '<div style="font-size:12px;color:#9ca3af;padding:4px 0">找不到飼主</div>';
+    return;
+  }
+  el.innerHTML = `<table>
+    <thead><tr><th>姓名</th><th>電話</th><th></th></tr></thead>
+    <tbody>${owners.map(o => `
+      <tr>
+        <td>${o.Full_Name}</td>
+        <td>${o.Phone_Number}</td>
+        <td><button class="btn-sm btn-primary" onclick="selectOwner(${o.Owner_ID})">選擇</button></td>
+      </tr>`).join('')}
+    </tbody></table>`;
+}
+
+async function selectOwner(id) {
+  state.owner = MOCK.owners.find(o => o.Owner_ID === id);
+  document.getElementById('owner-results').innerHTML =
+    `<div class="pet-chip">✓ ${state.owner.Full_Name}　${state.owner.Phone_Number}</div>`;
+
+  // 載入該飼主的寵物 (Pets view)
+  const pets = await api('GET', `/pets?owner_id=${id}`);
+  const sel  = document.getElementById('pet-select');
+  sel.innerHTML = '<option value="">— 選擇 —</option>' +
+    pets.map(p => `<option value="${p.Pet_ID}">${p.Pet_Name}（${p.Species_Type}）</option>`).join('');
+  document.getElementById('pet-card').style.display = '';
+
+  // 載入醫師清單
+  const docs = await api('GET', '/doctors');
+  const dsel = document.getElementById('doctor-select');
+  dsel.innerHTML = '<option value="">— 選擇醫師 —</option>' +
+    docs.map(d => `<option value="${d.Staff_ID}">${d.Staff_Name}（${d.Specialty}）</option>`).join('');
+  document.getElementById('appt-date').value = todayStr();
+}
+
+function selectPet(pid) {
+  if (!pid) {
+    document.getElementById('pet-detail').style.display = 'none';
+    document.getElementById('schedule-card').style.display = 'none';
+    return;
+  }
+  const pet = MOCK.pets.find(p => p.Pet_ID == pid);
+  state.pet = pet;
+  document.getElementById('pet-species').value = pet.Species_Type;
+  document.getElementById('pet-detail').style.display = '';
+  document.getElementById('pet-detail').innerHTML =
+    `🐾 ${pet.Pet_Name}　${pet.Species_Type}${pet.Breed_Name ? '・' + pet.Breed_Name : ''}　${calcAge(pet.Birth_Date)}　${pet.Current_Weight} kg`;
+  document.getElementById('schedule-card').style.display = '';
+}
+
+async function loadSchedule() {
+  const date = document.getElementById('appt-date').value;
+  const did  = document.getElementById('doctor-select').value;
+  if (!date || !did) return;
+  state.Doc_Staff_ID = parseInt(did);
+  state.selectedTime = null;
+
+  // GET /schedule?doctor_id=x&date=yyyy-mm-dd
+  const slots = await api('GET', `/schedule?doctor_id=${did}&date=${date}`);
+  document.getElementById('slot-grid').innerHTML = slots.map(s => `
+    <div class="slot ${s.available ? 'free' : 'busy'}"
+         onclick="${s.available ? `selectSlot('${s.time}',this)` : ''}">
+      ${s.available ? '✓' : '✗'} ${s.time}
+    </div>`).join('');
+}
+
+function selectSlot(time, el) {
+  document.querySelectorAll('.slot').forEach(s => s.classList.remove('selected'));
+  el.classList.add('selected');
+  state.selectedTime = time;
+}
+
+async function submitAppointment() {
+  if (!state.owner)        return toast('請先選擇飼主', 'error');
+  if (!state.pet)          return toast('請選擇寵物', 'error');
+  if (!state.Doc_Staff_ID) return toast('請選擇醫師', 'error');
+  if (!state.selectedTime) return toast('請選擇時段', 'error');
+
+  const date = document.getElementById('appt-date').value;
+  // Scheduled_Time = DATETIME  e.g. '2026-06-12T09:00:00'
+  const Scheduled_Time = `${date}T${state.selectedTime}:00`;
+
+  await api('POST', '/appointments', {
+    Pet_ID:         state.pet.Pet_ID,
+    Doc_Staff_ID:   state.Doc_Staff_ID,
+    Scheduled_Time,
+    Appt_Status:    0,
+  });
+  toast('✓ 預約成功！', 'success');
+  resetAll();
+}
+
+function resetAll() {
+  state = { owner: null, pet: null, Doc_Staff_ID: null, selectedTime: null };
+  document.getElementById('owner-search').value = '';
+  document.getElementById('owner-results').innerHTML = '';
+  document.getElementById('pet-card').style.display = 'none';
+  document.getElementById('schedule-card').style.display = 'none';
+}
+</script>
+</body>
+</html>

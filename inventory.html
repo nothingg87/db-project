@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>庫存查詢 — 寵物醫院管理系統</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI','Noto Sans TC',sans-serif;background:#f4f6f9;color:#1a1a1a;display:flex;height:100vh;overflow:hidden;font-size:14px}
+#sidebar{width:220px;background:#1e2330;display:flex;flex-direction:column;flex-shrink:0}
+#sidebar .logo{padding:20px 18px 16px;border-bottom:1px solid #2d3347}
+#sidebar .logo-title{font-size:14px;font-weight:600;color:#fff;line-height:1.4}
+#sidebar .logo-sub{font-size:11px;color:#6b7280;margin-top:2px}
+#sidebar nav{flex:1;padding:12px 0}
+#sidebar nav a{display:flex;align-items:center;gap:10px;padding:10px 18px;color:#9ca3af;font-size:13px;cursor:pointer;border-left:3px solid transparent;text-decoration:none;transition:all .15s}
+#sidebar nav a:hover{color:#e5e7eb;background:#252b3b}
+#sidebar nav a.active{color:#fff;background:#252b3b;border-left-color:#3b82f6}
+#sidebar nav a .icon{font-size:16px;width:20px;text-align:center}
+#sidebar .user-info{padding:14px 18px;border-top:1px solid #2d3347}
+#sidebar .user-role{font-size:11px;color:#6b7280}
+#sidebar .user-name{font-size:13px;color:#d1d5db;margin-top:2px}
+#main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+#topbar{background:#fff;border-bottom:1px solid #e5e7eb;padding:0 24px;height:52px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+#topbar .page-title{font-size:15px;font-weight:500}
+#content{flex:1;overflow-y:auto;padding:24px}
+.card{background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:16px 18px;margin-bottom:14px}
+.card-title{font-size:12px;color:#6b7280;margin-bottom:12px;font-weight:600;letter-spacing:.3px;text-transform:uppercase}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+.field{display:flex;flex-direction:column;gap:4px}
+.field label{font-size:12px;color:#6b7280}
+input[type=text],input[type=number],select{border:1px solid #d1d5db;border-radius:6px;padding:7px 10px;font-size:13px;color:#1a1a1a;background:#fafafa;width:100%;font-family:inherit;outline:none;transition:border-color .15s}
+input:focus,select:focus{border-color:#3b82f6;background:#fff}
+button{border:1px solid #d1d5db;background:#fff;border-radius:6px;padding:7px 16px;font-size:13px;cursor:pointer;font-family:inherit;transition:all .15s}
+button:hover{background:#f9fafb}
+button:active{transform:scale(.98)}
+.btn-primary{background:#3b82f6;color:#fff;border-color:#2563eb}
+.btn-primary:hover{background:#2563eb}
+.btn-sm{padding:5px 12px;font-size:12px}
+.badge{font-size:11px;padding:2px 8px;border-radius:5px;font-weight:500}
+.badge-blue{background:#dbeafe;color:#1e40af}
+.badge-amber{background:#fef9c3;color:#854d0e}
+.badge-green{background:#dcfce7;color:#166534}
+.badge-red{background:#fee2e2;color:#991b1b}
+.badge-gray{background:#f3f4f6;color:#6b7280}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;padding:8px 10px;border-bottom:2px solid #e5e7eb;font-size:11px;color:#6b7280;font-weight:600;text-transform:uppercase;letter-spacing:.3px}
+td{padding:10px;border-bottom:1px solid #f3f4f6}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:#f9fafb}
+tr.low-stock td{background:#fff7ed}
+tr.discontinued td{opacity:.5}
+.stock-bar-wrap{width:80px;background:#f3f4f6;border-radius:4px;height:6px;display:inline-block;vertical-align:middle;margin-left:6px}
+.stock-bar{height:6px;border-radius:4px;background:#22c55e}
+.stock-bar.low{background:#f59e0b}
+.stock-bar.critical{background:#ef4444}
+.filter-row{display:flex;gap:8px;margin-bottom:14px;align-items:center;flex-wrap:wrap}
+.filter-row select{width:auto}
+.filter-row label{font-size:12px;color:#6b7280;display:flex;align-items:center;gap:4px}
+#modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:100;align-items:center;justify-content:center}
+#modal-overlay.show{display:flex}
+#modal-box{background:#fff;border-radius:12px;padding:24px;width:360px;max-width:90vw}
+#modal-box h3{font-size:15px;margin-bottom:16px}
+#toast{position:fixed;bottom:24px;right:24px;background:#1e2330;color:#fff;padding:12px 18px;border-radius:8px;font-size:13px;transform:translateY(80px);opacity:0;transition:all .3s;z-index:999;max-width:280px}
+#toast.show{transform:translateY(0);opacity:1}
+#toast.success{background:#166534}
+#toast.error{background:#991b1b}
+</style>
+</head>
+<body data-roles="4">
+<aside id="sidebar">
+  <div class="logo">
+    <div class="logo-title">🐾 現代寵物醫院</div>
+    <div class="logo-sub">醫療與營運管理系統</div>
+  </div>
+  <nav></nav>
+  <div class="user-info" id="user-info"></div>
+</aside>
+
+<div id="main">
+  <div id="topbar">
+    <div class="page-title">庫存查詢</div>
+    <div style="font-size:12px;color:#6b7280" id="topbar-date"></div>
+  </div>
+  <div id="content">
+
+    <!-- 低庫存警示 -->
+    <div class="card" id="alert-card" style="display:none">
+      <div class="card-title">⚠️ 低庫存警示</div>
+      <div id="alert-list"></div>
+    </div>
+
+    <!-- 目錄清單 -->
+    <div class="card">
+      <div class="card-title">服務 / 藥品目錄 Catalog_Items</div>
+      <div class="filter-row">
+        <select id="filter-cat" onchange="renderCatalog()">
+          <option value="">全部類別</option>
+          <option value="1">藥品（有庫存）</option>
+          <option value="2">檢驗</option>
+          <option value="3">治療</option>
+        </select>
+        <label><input type="checkbox" id="show-discontinued" onchange="renderCatalog()"> 顯示下架項目</label>
+        <div style="margin-left:auto;display:flex;align-items:center;gap:6px">
+          <span style="font-size:12px;color:#6b7280">安全庫存閾值</span>
+          <input type="number" id="threshold" value="50" min="0" style="width:70px" oninput="renderCatalog()">
+        </div>
+      </div>
+      <div id="catalog-table"><span style="font-size:12px;color:#9ca3af">載入中…</span></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- 改價 Modal -->
+<div id="modal-overlay">
+  <div id="modal-box">
+    <h3 id="modal-title">修改價格</h3>
+    <div class="field" style="margin-bottom:12px">
+      <label>Current_Price（新售價）</label>
+      <input type="number" id="new-price" min="0" step="0.01">
+    </div>
+    <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:20px">
+      <button onclick="closeModal()">取消</button>
+      <button class="btn-primary" onclick="confirmPrice()">儲存</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+<script src="common.js"></script>
+<script>
+let editItemId = null;
+
+document.getElementById('topbar-date').textContent = todayStr();
+
+async function init() {
+  await renderCatalog();
+}
+
+async function renderCatalog() {
+  const all        = await api('GET', '/catalog/all');
+  const filterCat  = document.getElementById('filter-cat').value;
+  const showDisc   = document.getElementById('show-discontinued').checked;
+  const threshold  = parseInt(document.getElementById('threshold').value) || 50;
+
+  // 低庫存警示（只針對 Item_Category=1）
+  const lowItems = all.filter(c => c.Item_Category === 1 && !c.Is_Discontinued && c.Stock_Quantity < threshold);
+  const alertCard = document.getElementById('alert-card');
+  if (lowItems.length) {
+    alertCard.style.display = '';
+    document.getElementById('alert-list').innerHTML = lowItems.map(c =>
+      `<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #fef3c7;font-size:13px">
+        <span>${c.Item_Name}</span>
+        <span style="color:#92400e;font-weight:500">剩餘 ${c.Stock_Quantity} 件</span>
+      </div>`
+    ).join('');
+  } else {
+    alertCard.style.display = 'none';
+  }
+
+  let items = all;
+  if (filterCat) items = items.filter(c => c.Item_Category == filterCat);
+  if (!showDisc)  items = items.filter(c => !c.Is_Discontinued);
+
+  const el = document.getElementById('catalog-table');
+  if (!items.length) { el.innerHTML = '<div style="font-size:12px;color:#9ca3af;padding:8px 0">無符合項目</div>'; return; }
+
+  el.innerHTML = `<table>
+    <thead><tr><th>#</th><th>名稱</th><th>類別</th><th>Current_Price</th><th>Stock_Quantity</th><th>狀態</th><th style="width:140px"></th></tr></thead>
+    <tbody>${items.map(c => {
+      const isLow = c.Item_Category === 1 && c.Stock_Quantity !== null && c.Stock_Quantity < threshold;
+      const isCritical = c.Item_Category === 1 && c.Stock_Quantity !== null && c.Stock_Quantity < threshold / 2;
+      const ratio = (c.Item_Category === 1 && c.Stock_Quantity !== null)
+        ? Math.min(100, Math.round(c.Stock_Quantity / threshold * 100)) : null;
+      return `<tr class="${c.Is_Discontinued ? 'discontinued' : isLow ? 'low-stock' : ''}">
+        <td style="color:#9ca3af">${c.Item_ID}</td>
+        <td>${c.Item_Name}</td>
+        <td><span class="badge ${c.Item_Category===1?'badge-blue':c.Item_Category===2?'badge-amber':'badge-green'}">${categoryLabel(c.Item_Category)}</span></td>
+        <td>$${c.Current_Price.toLocaleString()}</td>
+        <td>
+          ${c.Stock_Quantity !== null
+            ? `${c.Stock_Quantity}
+               <span class="stock-bar-wrap"><span class="stock-bar ${isCritical?'critical':isLow?'low':''}" style="width:${ratio}%"></span></span>`
+            : '<span style="color:#9ca3af">—</span>'}
+        </td>
+        <td>${c.Is_Discontinued
+          ? '<span class="badge badge-gray">已下架</span>'
+          : '<span class="badge badge-green">上架中</span>'}</td>
+        <td>
+          <button class="btn-sm" onclick="openPriceModal(${c.Item_ID}, ${c.Current_Price})">改價</button>
+          ${!c.Is_Discontinued
+            ? `<button class="btn-sm" style="color:#dc2626" onclick="discontinue(${c.Item_ID})">下架</button>`
+            : ''}
+        </td>
+      </tr>`;
+    }).join('')}</tbody></table>`;
+}
+
+function openPriceModal(id, current) {
+  editItemId = id;
+  document.getElementById('new-price').value = current;
+  document.getElementById('modal-overlay').classList.add('show');
+}
+function closeModal() { document.getElementById('modal-overlay').classList.remove('show'); }
+
+async function confirmPrice() {
+  const price = parseFloat(document.getElementById('new-price').value);
+  if (isNaN(price) || price < 0) return toast('請輸入有效售價', 'error');
+  await api('PATCH', `/catalog/${editItemId}`, { Current_Price: price });
+  toast('✓ 售價已更新', 'success');
+  closeModal();
+  renderCatalog();
+}
+
+async function discontinue(id) {
+  const item = MOCK.catalog.find(c => c.Item_ID === id);
+  if (!confirm(`確定下架「${item?.Item_Name}」？`)) return;
+  await api('PATCH', `/catalog/${id}`, { Is_Discontinued: true });
+  toast('✓ 已下架', 'success');
+  renderCatalog();
+}
+
+init();
+</script>
+</body>
+</html>

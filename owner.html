@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>飼主管理 — 寵物醫院管理系統</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI','Noto Sans TC',sans-serif;background:#f4f6f9;color:#1a1a1a;display:flex;height:100vh;overflow:hidden;font-size:14px}
+#sidebar{width:220px;background:#1e2330;display:flex;flex-direction:column;flex-shrink:0}
+#sidebar .logo{padding:20px 18px 16px;border-bottom:1px solid #2d3347}
+#sidebar .logo-title{font-size:14px;font-weight:600;color:#fff;line-height:1.4}
+#sidebar .logo-sub{font-size:11px;color:#6b7280;margin-top:2px}
+#sidebar nav{flex:1;padding:12px 0}
+#sidebar nav a{display:flex;align-items:center;gap:10px;padding:10px 18px;color:#9ca3af;font-size:13px;cursor:pointer;border-left:3px solid transparent;text-decoration:none;transition:all .15s}
+#sidebar nav a:hover{color:#e5e7eb;background:#252b3b}
+#sidebar nav a.active{color:#fff;background:#252b3b;border-left-color:#3b82f6}
+#sidebar nav a .icon{font-size:16px;width:20px;text-align:center}
+#sidebar .user-info{padding:14px 18px;border-top:1px solid #2d3347}
+#sidebar .user-role{font-size:11px;color:#6b7280}
+#sidebar .user-name{font-size:13px;color:#d1d5db;margin-top:2px}
+#main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+#topbar{background:#fff;border-bottom:1px solid #e5e7eb;padding:0 24px;height:52px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+#topbar .page-title{font-size:15px;font-weight:500}
+#content{flex:1;overflow-y:auto;padding:24px}
+.card{background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:16px 18px;margin-bottom:14px}
+.card-title{font-size:12px;color:#6b7280;margin-bottom:12px;font-weight:600;letter-spacing:.3px;text-transform:uppercase}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+.field{display:flex;flex-direction:column;gap:4px}
+.field label{font-size:12px;color:#6b7280}
+input[type=text],input[type=date],input[type=number],select{border:1px solid #d1d5db;border-radius:6px;padding:7px 10px;font-size:13px;color:#1a1a1a;background:#fafafa;width:100%;font-family:inherit;outline:none;transition:border-color .15s}
+input:focus,select:focus{border-color:#3b82f6;background:#fff}
+input:disabled{background:#f0f0f0;color:#9ca3af;cursor:not-allowed}
+.btn-row{display:flex;justify-content:flex-end;gap:8px;margin-top:4px}
+button{border:1px solid #d1d5db;background:#fff;border-radius:6px;padding:7px 16px;font-size:13px;cursor:pointer;font-family:inherit;transition:all .15s}
+button:hover{background:#f9fafb}
+button:active{transform:scale(.98)}
+.btn-primary{background:#3b82f6;color:#fff;border-color:#2563eb}
+.btn-primary:hover{background:#2563eb}
+.btn-danger{background:#ef4444;color:#fff;border-color:#dc2626}
+.btn-danger:hover{background:#dc2626}
+.btn-sm{padding:5px 12px;font-size:12px}
+.badge{font-size:11px;padding:2px 8px;border-radius:5px;font-weight:500}
+.badge-blue{background:#dbeafe;color:#1e40af}
+.badge-gray{background:#f3f4f6;color:#6b7280}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;padding:8px 10px;border-bottom:2px solid #e5e7eb;font-size:11px;color:#6b7280;font-weight:600;text-transform:uppercase;letter-spacing:.3px}
+td{padding:10px;border-bottom:1px solid #f3f4f6;vertical-align:top}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:#f9fafb}
+.search-row{display:flex;gap:8px;margin-bottom:14px}
+.search-row input{flex:1}
+hr{border:none;border-top:1px solid #e5e7eb;margin:14px 0}
+#modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:100;align-items:center;justify-content:center}
+#modal-overlay.show{display:flex}
+#modal-box{background:#fff;border-radius:12px;padding:24px;width:480px;max-width:92vw;max-height:88vh;overflow-y:auto}
+#modal-box h3{font-size:15px;margin-bottom:16px}
+#modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:20px}
+.section-label{font-size:12px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.3px;margin:14px 0 8px}
+#toast{position:fixed;bottom:24px;right:24px;background:#1e2330;color:#fff;padding:12px 18px;border-radius:8px;font-size:13px;transform:translateY(80px);opacity:0;transition:all .3s;z-index:999;max-width:280px}
+#toast.show{transform:translateY(0);opacity:1}
+#toast.success{background:#166534}
+#toast.error{background:#991b1b}
+.pet-tag{display:inline-block;background:#eff6ff;border:1px solid #bfdbfe;color:#1e40af;border-radius:6px;padding:2px 8px;font-size:11px;margin:2px}
+</style>
+</head>
+<body data-roles="1,4">
+<aside id="sidebar">
+  <div class="logo">
+    <div class="logo-title">🐾 現代寵物醫院</div>
+    <div class="logo-sub">醫療與營運管理系統</div>
+  </div>
+  <nav></nav>
+  <div class="user-info" id="user-info"></div>
+</aside>
+
+<div id="main">
+  <div id="topbar">
+    <div class="page-title">飼主管理</div>
+    <button class="btn-primary btn-sm" onclick="openAddModal()">＋ 新增飼主</button>
+  </div>
+  <div id="content">
+
+    <!-- 搜尋 -->
+    <div class="card">
+      <div class="card-title">搜尋飼主</div>
+      <div class="search-row">
+        <input type="text" id="search-input" placeholder="姓名或電話…" oninput="doSearch(this.value)">
+        <button onclick="doSearch(document.getElementById('search-input').value)">搜尋</button>
+        <button onclick="loadAll()">顯示全部</button>
+      </div>
+      <div id="owner-table"><span style="font-size:12px;color:#9ca3af">輸入關鍵字搜尋，或點「顯示全部」</span></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Modal：新增 / 編輯飼主 -->
+<div id="modal-overlay">
+  <div id="modal-box">
+    <h3 id="modal-title">新增飼主</h3>
+
+    <div class="section-label">飼主資料</div>
+    <div class="form-grid">
+      <div class="field"><label>Full_Name *</label><input type="text" id="f-name" placeholder="陳小明"></div>
+      <div class="field"><label>Phone_Number</label><input type="text" id="f-phone" placeholder="0912-345-678"></div>
+    </div>
+    <div class="form-grid">
+      <div class="field"><label>Email_Address</label><input type="text" id="f-email" placeholder="選填"></div>
+      <div class="field"><label>Physical_Address</label><input type="text" id="f-addr" placeholder="選填"></div>
+    </div>
+
+    <!-- 新增時才顯示寵物欄 -->
+    <div id="pet-section">
+      <hr>
+      <div class="section-label">同時新增寵物（選填）</div>
+      <div class="form-grid">
+        <div class="field"><label>Pet_Name</label><input type="text" id="p-name" placeholder="小白"></div>
+        <div class="field"><label>Species_Type</label><input type="text" id="p-species" placeholder="貓 / 犬 / 兔…"></div>
+      </div>
+      <div class="form-grid">
+        <div class="field"><label>Breed_Name</label><input type="text" id="p-breed" placeholder="選填"></div>
+        <div class="field"><label>Current_Weight (kg)</label><input type="number" id="p-weight" min="0" step="0.1" placeholder="3.2"></div>
+      </div>
+      <div class="field"><label>Birth_Date</label><input type="date" id="p-birth"></div>
+    </div>
+
+    <div id="modal-actions">
+      <button onclick="closeModal()">取消</button>
+      <button class="btn-primary" id="modal-confirm" onclick="confirmModal()">儲存</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal：新增寵物（到現有飼主） -->
+<div id="pet-modal-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:100;align-items:center;justify-content:center">
+  <div style="background:#fff;border-radius:12px;padding:24px;width:420px;max-width:90vw">
+    <h3 style="font-size:15px;margin-bottom:16px">為 <span id="pm-owner-name"></span> 新增寵物</h3>
+    <div class="form-grid">
+      <div class="field"><label>Pet_Name *</label><input type="text" id="pm-name"></div>
+      <div class="field"><label>Species_Type *</label><input type="text" id="pm-species"></div>
+    </div>
+    <div class="form-grid">
+      <div class="field"><label>Breed_Name</label><input type="text" id="pm-breed"></div>
+      <div class="field"><label>Current_Weight (kg)</label><input type="number" id="pm-weight" min="0" step="0.1"></div>
+    </div>
+    <div class="field"><label>Birth_Date</label><input type="date" id="pm-birth"></div>
+    <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:20px">
+      <button onclick="closePetModal()">取消</button>
+      <button class="btn-primary" onclick="confirmAddPet()">新增</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+<script src="common.js"></script>
+<script>
+let modalMode  = 'add';   // 'add' | 'edit'
+let editOwner  = null;
+let addPetOwnerId = null;
+
+async function loadAll() {
+  const owners = await api('GET', '/owners/search?q=');
+  renderTable(owners);
+}
+
+async function doSearch(q) {
+  if (!q.trim()) { document.getElementById('owner-table').innerHTML = '<span style="font-size:12px;color:#9ca3af">輸入關鍵字搜尋</span>'; return; }
+  const owners = await api('GET', `/owners/search?q=${encodeURIComponent(q)}`);
+  renderTable(owners);
+}
+
+function renderTable(owners) {
+  const el = document.getElementById('owner-table');
+  if (!owners.length) { el.innerHTML = '<div style="font-size:12px;color:#9ca3af;padding:8px 0">找不到飼主</div>'; return; }
+  el.innerHTML = `<table>
+    <thead><tr><th>#</th><th>姓名</th><th>電話</th><th>寵物</th><th style="width:180px"></th></tr></thead>
+    <tbody>${owners.map(o => {
+      const pets = MOCK.pets.filter(p => p.Owner_ID === o.Owner_ID);
+      return `<tr>
+        <td style="color:#9ca3af">${o.Owner_ID}</td>
+        <td>${o.Full_Name}</td>
+        <td>${o.Phone_Number}</td>
+        <td>${pets.map(p => `<span class="pet-tag">${p.Pet_Name}（${p.Species_Type}）</span>`).join('') || '<span style="color:#9ca3af;font-size:12px">無</span>'}</td>
+        <td>
+          <button class="btn-sm" onclick="openEditModal(${o.Owner_ID})">編輯</button>
+          <button class="btn-sm" onclick="openPetModal(${o.Owner_ID})">＋寵物</button>
+          <button class="btn-sm btn-danger" onclick="anonymize(${o.Owner_ID})">匿名化</button>
+        </td>
+      </tr>`;
+    }).join('')}</tbody></table>`;
+}
+
+// ── 新增飼主 Modal ──
+function openAddModal() {
+  modalMode = 'add';
+  editOwner = null;
+  document.getElementById('modal-title').textContent = '新增飼主';
+  document.getElementById('pet-section').style.display = '';
+  ['f-name','f-phone','f-email','f-addr','p-name','p-species','p-breed','p-birth'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('p-weight').value = '';
+  document.getElementById('modal-overlay').classList.add('show');
+}
+
+function openEditModal(oid) {
+  modalMode = 'edit';
+  editOwner = MOCK.owners.find(o => o.Owner_ID === oid);
+  if (!editOwner) return;
+  document.getElementById('modal-title').textContent = '編輯飼主資料';
+  document.getElementById('pet-section').style.display = 'none';
+  document.getElementById('f-name').value  = editOwner.Full_Name || '';
+  document.getElementById('f-phone').value = editOwner.Phone_Number || '';
+  document.getElementById('f-email').value = editOwner.Email_Address || '';
+  document.getElementById('f-addr').value  = editOwner.Physical_Address || '';
+  document.getElementById('modal-overlay').classList.add('show');
+}
+
+function closeModal() { document.getElementById('modal-overlay').classList.remove('show'); }
+
+async function confirmModal() {
+  const Full_Name    = document.getElementById('f-name').value.trim();
+  const Phone_Number = document.getElementById('f-phone').value.trim();
+  if (!Full_Name) return toast('請輸入飼主姓名', 'error');
+
+  if (modalMode === 'add') {
+    const owner = await api('POST', '/owners', {
+      Full_Name, Phone_Number: Phone_Number || null,
+      Email_Address:   document.getElementById('f-email').value || null,
+      Physical_Address: document.getElementById('f-addr').value || null,
+    });
+    // 有填寵物就一併新增
+    const pName    = document.getElementById('p-name').value.trim();
+    const pSpecies = document.getElementById('p-species').value.trim();
+    if (pName && pSpecies) {
+      await api('POST', '/pets', {
+        Owner_ID:       owner.Owner_ID,
+        Pet_Name:       pName,
+        Species_Type:   pSpecies,
+        Breed_Name:     document.getElementById('p-breed').value || null,
+        Birth_Date:     document.getElementById('p-birth').value || null,
+        Current_Weight: parseFloat(document.getElementById('p-weight').value) || null,
+      });
+    }
+    toast('✓ 飼主已新增', 'success');
+  } else {
+    await api('PATCH', `/owners/${editOwner.Owner_ID}`, {
+      Full_Name, Phone_Number: Phone_Number || null,
+      Email_Address:    document.getElementById('f-email').value || null,
+      Physical_Address: document.getElementById('f-addr').value || null,
+    });
+    toast('✓ 資料已更新', 'success');
+  }
+  closeModal();
+  loadAll();
+}
+
+// ── 新增寵物 Modal ──
+function openPetModal(oid) {
+  addPetOwnerId = oid;
+  const owner = MOCK.owners.find(o => o.Owner_ID === oid);
+  document.getElementById('pm-owner-name').textContent = owner?.Full_Name || '';
+  ['pm-name','pm-species','pm-breed','pm-birth'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('pm-weight').value = '';
+  document.getElementById('pet-modal-overlay').style.display = 'flex';
+}
+
+function closePetModal() { document.getElementById('pet-modal-overlay').style.display = 'none'; }
+
+async function confirmAddPet() {
+  const Pet_Name     = document.getElementById('pm-name').value.trim();
+  const Species_Type = document.getElementById('pm-species').value.trim();
+  if (!Pet_Name || !Species_Type) return toast('請填寵物名稱與物種', 'error');
+  await api('POST', '/pets', {
+    Owner_ID:       addPetOwnerId,
+    Pet_Name, Species_Type,
+    Breed_Name:     document.getElementById('pm-breed').value || null,
+    Birth_Date:     document.getElementById('pm-birth').value || null,
+    Current_Weight: parseFloat(document.getElementById('pm-weight').value) || null,
+  });
+  toast('✓ 寵物已新增', 'success');
+  closePetModal();
+  loadAll();
+}
+
+// ── 匿名化 ──
+async function anonymize(oid) {
+  const owner = MOCK.owners.find(o => o.Owner_ID === oid);
+  if (!confirm(`確定要匿名化「${owner?.Full_Name}」的資料？此操作不可還原。`)) return;
+  await api('PATCH', `/owners/${oid}/anonymize`);
+  toast('✓ 已匿名化', 'success');
+  loadAll();
+}
+</script>
+</body>
+</html>
